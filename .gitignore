@@ -1,0 +1,27 @@
+# --- Environment files ---
+.env
+*.env.local
+
+# --- Python (backend) ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# --- Node / React (frontend) ---
+node_modules/
+build/
+dist/
+.eslintcache
+
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Logs ---
+*.log
