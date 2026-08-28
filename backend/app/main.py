@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.api.analytics import router as analytics_router
+from app.api.ml import router as ml_router
 from app.api.transactions import router as transactions_router
 from app.db.mongodb import check_connection
 
@@ -8,6 +9,7 @@ app = FastAPI(title="PayPilot AI")
 
 app.include_router(transactions_router)
 app.include_router(analytics_router)
+app.include_router(ml_router)
 
 
 @app.get("/")

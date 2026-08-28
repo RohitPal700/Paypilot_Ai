@@ -14,3 +14,13 @@ starlette==1.6.0
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 uvicorn==0.52.4
+
+# --- ML training phase (transaction failure-risk model) ---
+numpy==2.4.4
+pandas==2.3.1
+scikit-learn==1.8.0
+joblib==1.5.3
+
+# --- testing (ML prediction API) ---
+pytest==8.4.2
+httpx==0.28.1
