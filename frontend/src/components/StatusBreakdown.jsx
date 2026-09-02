@@ -9,15 +9,15 @@ const STATUS_COLORS = {
   pending: "var(--amber)",
 };
 
-export default function StatusBreakdown() {
-  const { data, loading, error } = useFetchOnMount(getAnalyticsByStatus);
+export default function StatusBreakdown({ refreshKey }) {
+  const { data, loading, error } = useFetchOnMount(getAnalyticsByStatus, [refreshKey]);
 
   return (
     <div className="card">
       <div className="chart-title">Transactions by Status</div>
       <div className="chart-subtitle">Count of transactions in each status</div>
       <div className="chart-body">
-        {loading && <div className="state-message">Loading…</div>}
+        {loading && !data && <div className="state-message">Loading…</div>}
         {error && <div className="state-message error">Couldn't load: {error}</div>}
         {data && (
           <BarList

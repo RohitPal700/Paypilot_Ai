@@ -3,15 +3,15 @@ import { getAnalyticsByCategory } from "../services/api";
 import { formatCurrency } from "../utils/format";
 import BarList from "./BarList";
 
-export default function CategoryBreakdown() {
-  const { data, loading, error } = useFetchOnMount(getAnalyticsByCategory);
+export default function CategoryBreakdown({ refreshKey }) {
+  const { data, loading, error } = useFetchOnMount(getAnalyticsByCategory, [refreshKey]);
 
   return (
     <div className="card">
       <div className="chart-title">Spend by Category</div>
       <div className="chart-subtitle">Total transaction amount, grouped by category</div>
       <div className="chart-body">
-        {loading && <div className="state-message">Loading…</div>}
+        {loading && !data && <div className="state-message">Loading…</div>}
         {error && <div className="state-message error">Couldn't load: {error}</div>}
         {data && (
           <BarList
