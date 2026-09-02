@@ -24,3 +24,17 @@ joblib==1.5.3
 # --- testing (ML prediction API) ---
 pytest==8.4.2
 httpx==0.28.1
+
+# --- PDF statement import ---
+# pdfplumber chosen over the leaner pypdf: statement PDFs are tabular
+# (date/description/amount columns), and pdfplumber's layout-aware text
+# extraction is materially more reliable for that than pypdf's flat text
+# stream. python-multipart is required by FastAPI to parse the
+# multipart/form-data file upload (UploadFile/File).
+pdfplumber==0.11.9
+python-multipart==0.0.32
+
+# --- testing (PDF import) ---
+# fpdf2 is used ONLY to generate a synthetic statement PDF fixture inside
+# the test suite -- not a runtime dependency of the app itself.
+fpdf2==2.8.8
