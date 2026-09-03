@@ -1,8 +1,12 @@
+// PayPilot's real transaction data comes from Indian UPI statements
+// (PhonePe/Paytm/GPay), which are INR. Formatting as INR/en-IN here
+// matches what the user actually uploaded, rather than showing a "$"
+// symbol on rupee amounts.
 export function formatCurrency(amount) {
   if (amount === null || amount === undefined || Number.isNaN(amount)) return "—";
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency: "USD",
+    currency: "INR",
     maximumFractionDigits: 0,
   }).format(amount);
 }

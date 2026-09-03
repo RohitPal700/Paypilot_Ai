@@ -6,6 +6,14 @@ from pydantic import BaseModel
 class AnalyticsSummary(BaseModel):
     """High-level overview combining several headline metrics in one response."""
     total_transactions: int
+    # Money that actually left the account (successful payment/expense
+    # transactions only) -- this is what the dashboard's "Total Spent"
+    # card displays.
+    total_spent_amount: float
+    # Sum of ALL successful transactions regardless of type (payment,
+    # refund, expense, chargeback combined). Kept for backward
+    # compatibility; total_spent_amount is the precise "money spent"
+    # figure used by the UI.
     total_successful_amount: float
     total_failed_count: int
     total_refund_amount: float

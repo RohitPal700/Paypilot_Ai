@@ -50,7 +50,12 @@ from pymongo.errors import BulkWriteError
 
 from app.db.mongodb import db
 from app.schemas.import_result import ImportResult
-from app.schemas.transaction import Transaction, TransactionStatus, TransactionType
+from app.schemas.transaction import (
+    Transaction,
+    TransactionSource,
+    TransactionStatus,
+    TransactionType,
+)
 
 # Reuses the existing MongoDB connection (app/db/mongodb.py) and the SAME
 # "transactions" collection every other service already writes to and
@@ -96,18 +101,57 @@ _PAYMENT_METHOD_KEYWORDS = [
     (re.compile(r"\bbank transfer\b", re.IGNORECASE), "bank_transfer"),
 ]
 
-# Rough keyword -> category map. Falls back to "uncategorized" when
-# nothing matches -- this is a best-effort convenience, not a claim of
-# accurate merchant classification.
+# Rough keyword -> category map for real (PhonePe/Paytm/GPay-style)
+# consumer statement lines. Checked in order, first match wins. Falls back
+# to "Uncategorized" when nothing matches -- this is a best-effort,
+# deterministic convenience, not a claim of certified merchant
+# classification. Labels are Title Case so they render directly in the
+# "Where Your Money Went" UI without any further frontend transformation.
+#
+# This list is intentionally broader than a single merchant per category
+# (e.g. many generic food-item/dish keywords) because small UPI QR
+# payments to local vendors (canteens, stalls, etc.) often carry a
+# free-text note like "Pasta Grilled" rather than a recognizable brand
+# name -- there is no registry of such notes to look up, so common food
+# words are matched directly as a deterministic, explainable heuristic.
 _CATEGORY_KEYWORDS = [
-    (re.compile(r"amazon|flipkart|myntra|ajio", re.IGNORECASE), "electronics"),
-    (re.compile(r"swiggy|zomato|food|restaurant|cafe|dominos", re.IGNORECASE), "food_delivery"),
-    (re.compile(r"uber|ola|rapido|irctc|flight|train|travel", re.IGNORECASE), "travel"),
-    (re.compile(r"electricity|water bill|gas board|utility|utilities", re.IGNORECASE), "utilities"),
-    (re.compile(r"netflix|spotify|prime|subscription|hotstar", re.IGNORECASE), "software_subscription"),
-    (re.compile(r"grocery|groceries|bigbasket|supermarket|dmart", re.IGNORECASE), "groceries"),
-    (re.compile(r"office|stationery|supplies", re.IGNORECASE), "office_supplies"),
-    (re.compile(r"ad campaign|marketing|promotion", re.IGNORECASE), "marketing"),
+    (re.compile(
+        r"meesho|amazon|flipkart|myntra|ajio|nykaa|shopclues|shopping",
+        re.IGNORECASE,
+    ), "Shopping"),
+    (re.compile(
+        r"swiggy|zomato|restaurant|cafe|dominos|canteen|mess|dhaba|"
+        r"hotel|bakery|sweet|biryani|pizza|burger|sandwich|dosa|thali|"
+        r"chaat|roll|noodles|tandoor|juice|shake|pasta|grilled|tea|"
+        r"coffee|food",
+        re.IGNORECASE,
+    ), "Food"),
+    (re.compile(
+        r"general store|kirana|grocery|groceries|bigbasket|supermarket|dmart",
+        re.IGNORECASE,
+    ), "Groceries"),
+    (re.compile(
+        r"recharge|prepaid|postpaid|jio|airtel|\bvi\b|vodafone|mobile bill",
+        re.IGNORECASE,
+    ), "Mobile Recharge"),
+    (re.compile(
+        r"shadowfax|dunzo|porter|delhivery|ekart|bluedart|courier|delivery",
+        re.IGNORECASE,
+    ), "Delivery"),
+    (re.compile(
+        r"uber|ola|rapido|irctc|flight|train|travel|metro|fuel|petrol|diesel",
+        re.IGNORECASE,
+    ), "Travel"),
+    (re.compile(
+        r"electricity|water bill|gas board|utility|utilities|broadband|wifi",
+        re.IGNORECASE,
+    ), "Utilities"),
+    (re.compile(
+        r"netflix|spotify|prime|subscription|hotstar|youtube",
+        re.IGNORECASE,
+    ), "Subscriptions"),
+    (re.compile(r"\btransfer(red)?\b|self transfer", re.IGNORECASE), "Transfers"),
+    (re.compile(r"office|stationery|supplies", re.IGNORECASE), "Office Supplies"),
 ]
 
 
@@ -182,7 +226,7 @@ def _infer_category(description: str) -> str:
     for pattern, category in _CATEGORY_KEYWORDS:
         if pattern.search(description):
             return category
-    return "uncategorized"
+    return "Uncategorized"
 
 
 def _infer_transaction_type(line: str, is_credit: bool) -> TransactionType:
@@ -268,6 +312,15 @@ def parse_statement_text(text: str):
 
             is_credit = bool(_CREDIT_KEYWORDS.search(line)) and not bool(_DEBIT_KEYWORDS.search(line))
 
+            category = _infer_category(description)
+            # A credited/received line with no recognizable merchant
+            # keyword (i.e. still "Uncategorized" after the keyword pass)
+            # is almost always a peer-to-peer UPI transfer (e.g. "Received
+            # from Rohan Mehta"), not a real merchant category -- "Transfers"
+            # communicates that far more clearly on the dashboard.
+            if category == "Uncategorized" and is_credit:
+                category = "Transfers"
+
             parsed_rows.append(ParsedRow(
                 date=parsed_date,
                 amount=amount,
@@ -275,7 +328,7 @@ def parse_statement_text(text: str):
                 transaction_type=_infer_transaction_type(line, is_credit),
                 status=_infer_status(line),
                 payment_method=_infer_payment_method(line),
-                category=_infer_category(description),
+                category=category,
                 description=description,
             ))
         except (ValueError, IndexError):
@@ -325,6 +378,10 @@ def build_transaction(row: ParsedRow) -> Transaction:
         category=row.category,
         transaction_id=_deterministic_transaction_id(row),
         created_at=row.date,
+        # Tagged explicitly so the analytics layer can identify this as
+        # the user's real financial data -- see TransactionSource in
+        # app/schemas/transaction.py.
+        source=TransactionSource.STATEMENT_IMPORT,
     )
 
 

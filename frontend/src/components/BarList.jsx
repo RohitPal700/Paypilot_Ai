@@ -1,7 +1,9 @@
 /**
- * items: [{ label, value }]
+ * items: [{ label, value, subLabel? }]
  * valueFormatter: (value) => string, for the number shown next to each bar
  * colorFor: optional (item) => css color, defaults to the theme green
+ * subLabel: optional extra string per item (e.g. "34%" share of total),
+ * rendered in a muted tone right after the main value.
  */
 export default function BarList({ items, valueFormatter = String, colorFor }) {
   if (!items || items.length === 0) {
@@ -26,7 +28,10 @@ export default function BarList({ items, valueFormatter = String, colorFor }) {
                 style={{ width: `${widthPercent}%`, ...(color ? { background: color } : {}) }}
               />
             </span>
-            <span className="bar-chart-value">{valueFormatter(item.value)}</span>
+            <span className="bar-chart-value">
+              {valueFormatter(item.value)}
+              {item.subLabel && <span className="bar-chart-sublabel"> · {item.subLabel}</span>}
+            </span>
           </div>
         );
       })}

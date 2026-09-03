@@ -1,7 +1,12 @@
 import random
 from typing import List
 
-from app.schemas.transaction import Transaction, TransactionStatus, TransactionType
+from app.schemas.transaction import (
+    Transaction,
+    TransactionSource,
+    TransactionStatus,
+    TransactionType,
+)
 
 _MERCHANTS = [
     "merchant_bluewave", "merchant_urbancart", "merchant_freshbite",
@@ -53,6 +58,10 @@ def generate_synthetic_transactions(count: int = 50) -> List[Transaction]:
             payment_method=random.choice(_PAYMENT_METHODS),
             customer_id=f"customer_{random.randint(1000, 9999)}",
             category=random.choice(_CATEGORIES),
+            # Tagged explicitly so the analytics layer can exclude this
+            # demo/test data from the user-facing dashboard -- see
+            # TransactionSource in app/schemas/transaction.py.
+            source=TransactionSource.SYNTHETIC_SEED,
         )
         transactions.append(transaction)
     return transactions 

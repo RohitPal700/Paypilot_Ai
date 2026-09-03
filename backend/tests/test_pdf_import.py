@@ -163,6 +163,49 @@ def test_deterministic_transaction_id_differs_for_different_rows():
     assert len(set(ids)) == len(ids)
 
 
+def test_build_transaction_is_tagged_as_statement_import():
+    """
+    Every transaction built from a parsed PDF row must be tagged
+    source="statement_import" so analytics_service can distinguish real
+    statement data from synthetic seed/demo data.
+    """
+    text = "03 Jul 2025 Paid to Amazon Debit Rs.100.00"
+    rows, _, _ = parse_statement_text(text)
+    transaction = build_transaction(rows[0])
+    assert transaction.source.value == "statement_import"
+
+
+# --- Category classification (real PhonePe-style statement lines) ------
+
+
+def test_infers_expected_categories_for_common_phonepe_merchants():
+    text = (
+        "01 Aug 2026 Paid to Meesho Debit Rs.850.00\n"
+        "02 Aug 2026 Paid to RKGIT Canteen Debit Rs.120.00\n"
+        "03 Aug 2026 Paid to Mobile Recharge Debit Rs.239.00\n"
+        "04 Aug 2026 Paid to General Store Debit Rs.340.00\n"
+        "05 Aug 2026 Paid to Pasta Grilled Debit Rs.180.00\n"
+        "06 Aug 2026 Paid to Shadowfax Debit Rs.60.00\n"
+    )
+    rows, failed, _ = parse_statement_text(text)
+    assert failed == 0
+    categories = [r.category for r in rows]
+    assert categories == [
+        "Shopping",
+        "Food",
+        "Mobile Recharge",
+        "Groceries",
+        "Food",
+        "Delivery",
+    ]
+
+
+def test_uncategorized_credit_with_no_merchant_keyword_is_a_transfer():
+    text = "08 Jul 2025 Received from Rohan Mehta Credit Rs.500.00"
+    rows, _, _ = parse_statement_text(text)
+    assert rows[0].category == "Transfers"
+
+
 # --- API-level tests (routing/validation; service layer monkeypatched) --
 
 

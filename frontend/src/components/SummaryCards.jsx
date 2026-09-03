@@ -23,8 +23,11 @@ export default function SummaryCards({ refreshKey }) {
       accent: "green",
     },
     {
-      label: "Successful Amount",
-      value: formatCurrency(data.total_successful_amount),
+      // Money that actually left the account (successful payments only --
+      // excludes refunds/money received, so this isn't inflated by
+      // credits). See app/services/analytics_service.py: total_spent_amount.
+      label: "Total Spent",
+      value: formatCurrency(data.total_spent_amount),
       accent: "green",
       valueClass: "accent-green",
     },
@@ -35,7 +38,7 @@ export default function SummaryCards({ refreshKey }) {
       valueClass: "accent-red",
     },
     {
-      label: "Refund Amount",
+      label: "Money Received Back",
       value: formatCurrency(data.total_refund_amount),
       accent: "amber",
     },

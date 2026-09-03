@@ -19,6 +19,7 @@ client = TestClient(app)
 def test_analytics_summary_returns_expected_shape(monkeypatch):
     fake_summary = {
         "total_transactions": 53,
+        "total_spent_amount": 42056.30,
         "total_successful_amount": 49164.45,
         "total_failed_count": 4,
         "total_refund_amount": 11108.19,

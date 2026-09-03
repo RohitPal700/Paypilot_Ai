@@ -131,10 +131,19 @@ export default function UploadStatement({ onImportSuccess }) {
 
       {status === STATUS.SUCCESS && result && (
         <div className="upload-status-line success">
-          {result.imported} transaction{result.imported === 1 ? "" : "s"} imported
-          {result.skipped_duplicates > 0 &&
-            ` · ${result.skipped_duplicates} duplicate${result.skipped_duplicates === 1 ? "" : "s"} skipped`}
-          {result.failed_rows > 0 && ` · ${result.failed_rows} row(s) could not be read`}
+          {result.imported === 0 && result.skipped_duplicates > 0 ? (
+            <>
+              No new transactions were added — every row in this statement was already imported
+              {result.failed_rows > 0 && ` · ${result.failed_rows} row(s) could not be read`}
+            </>
+          ) : (
+            <>
+              {result.imported} transaction{result.imported === 1 ? "" : "s"} imported
+              {result.skipped_duplicates > 0 &&
+                ` · ${result.skipped_duplicates} duplicate${result.skipped_duplicates === 1 ? "" : "s"} skipped`}
+              {result.failed_rows > 0 && ` · ${result.failed_rows} row(s) could not be read`}
+            </>
+          )}
         </div>
       )}
 
