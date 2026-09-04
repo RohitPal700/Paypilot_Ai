@@ -1,51 +1,35 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
-from app.schemas.analytics import (
-    AnalyticsSummary,
-    ByCategoryResponse,
-    ByDateResponse,
-    ByStatusResponse,
-    ByTypeResponse,
-)
-from app.services.analytics_service import (
-    get_count_by_status,
-    get_count_by_type,
-    get_summary,
-    get_summary_by_category,
-    get_summary_by_date,
-)
+from app.schemas.analytics import AnalyticsSummary, ByCategoryResponse, ByDateResponse, ByStatusResponse, ByTypeResponse
+from app.services.analytics_service import get_count_by_status, get_count_by_type, get_summary, get_summary_by_category, get_summary_by_date
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
 
+def _call(fn, statement_id):
+    return fn() if statement_id is None else fn(statement_id)
+
+
 @router.get("/summary", response_model=AnalyticsSummary)
-def analytics_summary():
-    """
-    Headline numbers: total transaction count, total successful amount,
-    total failed count, and total refund amount.
-    """
-    return get_summary()
+def analytics_summary(statement_id: str | None = Query(default=None)):
+    return _call(get_summary, statement_id)
 
 
 @router.get("/by-status", response_model=ByStatusResponse)
-def analytics_by_status():
-    """Transaction count grouped by status (successful/failed/pending)."""
-    return {"results": get_count_by_status()}
+def analytics_by_status(statement_id: str | None = Query(default=None)):
+    return {"results": _call(get_count_by_status, statement_id)}
 
 
 @router.get("/by-type", response_model=ByTypeResponse)
-def analytics_by_type():
-    """Transaction count grouped by transaction_type (payment/refund/chargeback/expense)."""
-    return {"results": get_count_by_type()}
+def analytics_by_type(statement_id: str | None = Query(default=None)):
+    return {"results": _call(get_count_by_type, statement_id)}
 
 
 @router.get("/by-category", response_model=ByCategoryResponse)
-def analytics_by_category():
-    """Total amount and transaction count grouped by category."""
-    return {"results": get_summary_by_category()}
+def analytics_by_category(statement_id: str | None = Query(default=None)):
+    return {"results": _call(get_summary_by_category, statement_id)}
 
 
 @router.get("/by-date", response_model=ByDateResponse)
-def analytics_by_date():
-    """Total amount and transaction count grouped by calendar day (created_at)."""
-    return {"results": get_summary_by_date()}
+def analytics_by_date(statement_id: str | None = Query(default=None)):
+    return {"results": _call(get_summary_by_date, statement_id)}

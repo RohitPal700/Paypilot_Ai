@@ -26,14 +26,14 @@ export default function Dashboard() {
   // from earlier testing, instead of a clean empty state. See
   // hooks/useActiveStatement.js for why this is client-side/localStorage
   // rather than a backend concept (no auth in this project).
-  const { hasActiveStatement, activate } = useActiveStatement();
+  const { hasActiveStatement, statementId, activate } = useActiveStatement();
 
-  function handleImportSuccess() {
+  function handleImportSuccess(response) {
     // Any successful import response -- including an all-duplicates
     // response with imported === 0 -- means this statement's data
     // already exists in the database, so the dashboard should treat it
     // as active either way.
-    activate();
+    activate(response?.statement_id);
     setRefreshKey((key) => key + 1);
   }
 
@@ -72,7 +72,7 @@ export default function Dashboard() {
             <div className="section-heading">
               <span className="section-title">Summary</span>
             </div>
-            <SummaryCards refreshKey={refreshKey} />
+            <SummaryCards statementId={statementId} refreshKey={refreshKey} />
           </section>
 
           <section className="section">
@@ -80,9 +80,9 @@ export default function Dashboard() {
               <span className="section-title">Spending Analytics</span>
             </div>
             <div className="analytics-grid">
-              <CategoryBreakdown refreshKey={refreshKey} />
-              <StatusBreakdown refreshKey={refreshKey} />
-              <SpendingTrend refreshKey={refreshKey} />
+              <CategoryBreakdown statementId={statementId} refreshKey={refreshKey} />
+              <StatusBreakdown statementId={statementId} refreshKey={refreshKey} />
+              <SpendingTrend statementId={statementId} refreshKey={refreshKey} />
             </div>
           </section>
 
@@ -90,7 +90,7 @@ export default function Dashboard() {
             <div className="section-heading">
               <span className="section-title">Smart Insights</span>
             </div>
-            <SmartInsights refreshKey={refreshKey} />
+            <SmartInsights statementId={statementId} refreshKey={refreshKey} />
           </section>
         </>
       )}

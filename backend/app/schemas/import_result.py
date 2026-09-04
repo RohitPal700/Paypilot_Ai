@@ -16,6 +16,7 @@ class ImportResult(BaseModel):
     - errors: human-readable notes about hard failures during import,
       deliberately never containing a raw exception message or stack trace
     """
+    statement_id: str = ""
     imported: int
     skipped_duplicates: int
     failed_rows: int

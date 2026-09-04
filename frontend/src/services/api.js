@@ -37,20 +37,24 @@ export function getHealthDb() {
   return request("/health/db");
 }
 
-export function getAnalyticsSummary() {
-  return request("/api/analytics/summary");
+function withStatement(path, statementId) {
+  return `${path}?statement_id=${encodeURIComponent(statementId)}`;
 }
 
-export function getAnalyticsByStatus() {
-  return request("/api/analytics/by-status");
+export function getAnalyticsSummary(statementId) {
+  return request(withStatement("/api/analytics/summary", statementId));
 }
 
-export function getAnalyticsByCategory() {
-  return request("/api/analytics/by-category");
+export function getAnalyticsByStatus(statementId) {
+  return request(withStatement("/api/analytics/by-status", statementId));
 }
 
-export function getAnalyticsByDate() {
-  return request("/api/analytics/by-date");
+export function getAnalyticsByCategory(statementId) {
+  return request(withStatement("/api/analytics/by-category", statementId));
+}
+
+export function getAnalyticsByDate(statementId) {
+  return request(withStatement("/api/analytics/by-date", statementId));
 }
 
 export function predictRisk(payload) {

@@ -9,16 +9,16 @@ import { useState } from "react";
 // financial report at all, versus a fresh browser that hasn't uploaded
 // anything yet and would otherwise see whatever statement data happens
 // to already be sitting in the shared database from previous testing.
-const STORAGE_KEY = "paypilot_active_statement";
+const STORAGE_KEY = "paypilot_active_statement_id";
 
 function readInitialState() {
   try {
-    return window.localStorage.getItem(STORAGE_KEY) === "true";
+    const value = window.localStorage.getItem(STORAGE_KEY);
+    // Migrate the old boolean flag used by the previous implementation.
+    if (value === "true") return null;
+    return value || null;
   } catch {
-    // localStorage can throw in some environments (e.g. private
-    // browsing with storage disabled) -- fail safe to "no active
-    // statement" rather than crashing the dashboard.
-    return false;
+    return null;
   }
 }
 
@@ -34,17 +34,18 @@ function readInitialState() {
  * treat it as active.
  */
 export function useActiveStatement() {
-  const [hasActiveStatement, setHasActiveStatement] = useState(readInitialState);
+  const [statementId, setStatementId] = useState(readInitialState);
+  const hasActiveStatement = Boolean(statementId);
 
-  function activate() {
-    setHasActiveStatement(true);
+  function activate(nextStatementId) {
+    if (!nextStatementId) return;
+    setStatementId(nextStatementId);
     try {
-      window.localStorage.setItem(STORAGE_KEY, "true");
+      window.localStorage.setItem(STORAGE_KEY, nextStatementId);
     } catch {
-      // Non-fatal -- state is still updated for this session even if
-      // persistence fails.
+      // Non-fatal.
     }
   }
 
-  return { hasActiveStatement, activate };
+  return { hasActiveStatement, statementId, activate };
 }

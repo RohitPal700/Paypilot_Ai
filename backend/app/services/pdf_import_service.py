@@ -349,6 +349,11 @@ def _normalize_merchant_id(description: str) -> str:
     return slug[:60] if slug else "unknown_merchant"
 
 
+def _statement_id(file_bytes: bytes) -> str:
+    """Stable identifier for one exact uploaded PDF."""
+    return f"stmt_{sha256(file_bytes).hexdigest()[:32]}"
+
+
 def _deterministic_transaction_id(row: ParsedRow) -> str:
     """
     Same input row -> same ID, every time. This is what lets re-uploading
@@ -361,7 +366,7 @@ def _deterministic_transaction_id(row: ParsedRow) -> str:
     return f"pdf_{digest[:32]}"
 
 
-def build_transaction(row: ParsedRow) -> Transaction:
+def build_transaction(row: ParsedRow, statement_id: str | None = None) -> Transaction:
     """Turn one ParsedRow into a full Transaction record ready to insert."""
     merchant_id = _normalize_merchant_id(row.description)
     return Transaction(
@@ -382,22 +387,27 @@ def build_transaction(row: ParsedRow) -> Transaction:
         # the user's real financial data -- see TransactionSource in
         # app/schemas/transaction.py.
         source=TransactionSource.STATEMENT_IMPORT,
+        statement_id=statement_id,
     )
 
 
 def import_pdf(file_bytes: bytes) -> ImportResult:
+    """Extract, parse and safely import one statement PDF.
+
+    The exact PDF bytes define a stable statement_id. Re-uploading the same
+    statement therefore selects the same dashboard dataset even when every
+    transaction is already a duplicate. Legacy PDF-import rows (identified
+    by the historical ``pdf_`` transaction_id prefix) are backfilled with
+    source=statement_import and this statement_id when they match the parsed
+    transaction IDs.
     """
-    Full import pipeline: extract -> parse -> build -> insert.
-    Never raises for "normal" bad-input cases (empty PDF, no transactions
-    found, all-duplicate re-upload) -- those are reported via ImportResult
-    fields. Only genuinely unexpected errors propagate up to the API layer,
-    which converts them into a generic client-safe error response.
-    """
+    statement_id = _statement_id(file_bytes)
     text = extract_text_from_pdf(file_bytes)
     parsed_rows, failed_row_count, warnings = parse_statement_text(text)
 
     if not parsed_rows:
         return ImportResult(
+            statement_id=statement_id,
             imported=0,
             skipped_duplicates=0,
             failed_rows=failed_row_count,
@@ -405,8 +415,24 @@ def import_pdf(file_bytes: bytes) -> ImportResult:
             errors=[],
         )
 
-    transactions = [build_transaction(row) for row in parsed_rows]
+    transactions = [build_transaction(row, statement_id=statement_id) for row in parsed_rows]
     documents = [t.model_dump() for t in transactions]
+    transaction_ids = [t.transaction_id for t in transactions]
+
+    # Repair records imported by the previous version of PayPilot. These
+    # rows already have deterministic pdf_ IDs but no source/statement_id.
+    # Updating only those exact IDs is safe and makes duplicate re-uploading
+    # work without deleting any user data.
+    collection.update_many(
+        {
+            "$and": [
+                {"transaction_id": {"$in": transaction_ids}},
+                {"transaction_id": {"$regex": r"^pdf_"}},
+            ]
+        },
+        {"$set": {"source": TransactionSource.STATEMENT_IMPORT.value,
+                  "statement_id": statement_id}},
+    )
 
     imported = 0
     skipped_duplicates = 0
@@ -420,12 +446,13 @@ def import_pdf(file_bytes: bytes) -> ImportResult:
         imported = details.get("nInserted", 0)
         write_errors = details.get("writeErrors", [])
         for err in write_errors:
-            if err.get("code") == 11000:  # duplicate key
+            if err.get("code") == 11000:
                 skipped_duplicates += 1
             else:
                 errors.append("One row failed to import due to a database error.")
 
     return ImportResult(
+        statement_id=statement_id,
         imported=imported,
         skipped_duplicates=skipped_duplicates,
         failed_rows=failed_row_count,

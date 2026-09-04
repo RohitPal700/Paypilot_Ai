@@ -2,8 +2,8 @@ import { useFetchOnMount } from "../hooks/useFetchOnMount";
 import { getAnalyticsSummary } from "../services/api";
 import { formatCurrency, formatNumber } from "../utils/format";
 
-export default function SummaryCards({ refreshKey }) {
-  const { data, loading, error } = useFetchOnMount(getAnalyticsSummary, [refreshKey]);
+export default function SummaryCards({ refreshKey, statementId }) {
+  const { data, loading, error } = useFetchOnMount(() => getAnalyticsSummary(statementId), [statementId, refreshKey]);
 
   // On the very first load there's nothing to show yet -- block on it.
   // On a refresh (e.g. after a PDF import), keep showing the last known

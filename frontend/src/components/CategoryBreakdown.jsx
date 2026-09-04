@@ -3,8 +3,8 @@ import { getAnalyticsByCategory } from "../services/api";
 import { formatCurrency, formatPercent } from "../utils/format";
 import BarList from "./BarList";
 
-export default function CategoryBreakdown({ refreshKey }) {
-  const { data, loading, error } = useFetchOnMount(getAnalyticsByCategory, [refreshKey]);
+export default function CategoryBreakdown({ refreshKey, statementId }) {
+  const { data, loading, error } = useFetchOnMount(() => getAnalyticsByCategory(statementId), [statementId, refreshKey]);
 
   // Share of total spend for each category, computed from this same
   // section's own data (not a different endpoint's total) -- keeps the

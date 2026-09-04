@@ -9,8 +9,8 @@ const STATUS_COLORS = {
   pending: "var(--amber)",
 };
 
-export default function StatusBreakdown({ refreshKey }) {
-  const { data, loading, error } = useFetchOnMount(getAnalyticsByStatus, [refreshKey]);
+export default function StatusBreakdown({ refreshKey, statementId }) {
+  const { data, loading, error } = useFetchOnMount(() => getAnalyticsByStatus(statementId), [statementId, refreshKey]);
 
   return (
     <div className="card">

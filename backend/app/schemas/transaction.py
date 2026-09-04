@@ -74,3 +74,6 @@ class Transaction(TransactionCreate):
     #   (b) real transactions created through POST /api/transactions keep
     #       working exactly as before, with no client-side change required.
     source: TransactionSource = Field(default=TransactionSource.MANUAL)
+    # Identifies the uploaded statement/batch this transaction belongs to.
+    # Optional for legacy/manual records.
+    statement_id: str | None = None

@@ -101,10 +101,10 @@ function buildInsights({ categoryResults, statusResults, dateResults }) {
   return insights;
 }
 
-export default function SmartInsights({ refreshKey }) {
-  const category = useFetchOnMount(getAnalyticsByCategory, [refreshKey]);
-  const status = useFetchOnMount(getAnalyticsByStatus, [refreshKey]);
-  const date = useFetchOnMount(getAnalyticsByDate, [refreshKey]);
+export default function SmartInsights({ refreshKey, statementId }) {
+  const category = useFetchOnMount(() => getAnalyticsByCategory(statementId), [statementId, refreshKey]);
+  const status = useFetchOnMount(() => getAnalyticsByStatus(statementId), [statementId, refreshKey]);
+  const date = useFetchOnMount(() => getAnalyticsByDate(statementId), [statementId, refreshKey]);
 
   const loading = category.loading || status.loading || date.loading;
   const error = category.error || status.error || date.error;

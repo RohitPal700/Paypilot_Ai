@@ -47,6 +47,10 @@ def create_indexes() -> None:
     transactions = db["transactions"]
     transactions.create_index("transaction_id", unique=True, name="uniq_transaction_id")
     transactions.create_index("created_at", name="idx_created_at")
+    transactions.create_index(
+        [("source", 1), ("statement_id", 1)],
+        name="idx_statement_analytics",
+    )
 
 
 # Run index creation once, at import time -- i.e. whenever the application

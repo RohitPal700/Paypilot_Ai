@@ -144,4 +144,6 @@ def test_manual_and_legacy_no_source_documents_are_excluded(monkeypatch):
     # An exact-match filter on "statement_import" naturally excludes any
     # other value (including a missing field, "manual", or
     # "synthetic_seed") -- assert the filter is exact-match, not $ne.
-    assert match_stage == {"source": "statement_import"}
+    assert match_stage["source"] == "statement_import"
+    assert match_stage["status"] == "successful"
+    assert match_stage["transaction_type"] == {"$in": ["payment", "expense"]}
